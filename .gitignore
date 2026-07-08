@@ -3,7 +3,8 @@
 /data
 *.csv 
 data/
-
+.log
+logs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
