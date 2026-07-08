@@ -30,3 +30,6 @@ while attempt < max_retry:
         print('fix something')
         print(status)
         break
+
+
+    name = 'joe'
