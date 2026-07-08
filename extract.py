@@ -9,6 +9,7 @@ log_dir = 'logs'
 os.makedirs(log_dir, exist_ok=True) # creates a folder called 'logs' - if it already exists then it's ok - i.e. doesnt show an error or do anything.
 log_filename = f'{log_dir}/{timestamp}.log' # creating a string for the filename based on the timestamp
 
+# Configutring logging - anything INFO level and higher will be included
 logging.basicConfig(
     filename = log_filename,
     format = '%(asctime)s - %(levelname)s - %(message)s', 
@@ -26,7 +27,7 @@ logger.info('Logger successfully initiated')
 url = 'https://api.tfl.gov.uk/BikePoint/'
 data_dir = 'data'
 os.makedirs(data_dir, exist_ok=True) # creates a folder called 'data' - if it already exists then it's ok - i.e. doesnt show an error or do anything.
-filename = f'{data_dir}/{timestamp}.json' # filename based on timestamp
+filename = f'{data_dir}/{timestamp}.json' # creating a filename based on timestamp
 max_retry = 5
 attempt = 0
 delay = 10
@@ -38,11 +39,18 @@ while attempt < max_retry:
     status = response.status_code
     if 200 <= status < 300:
         data = response.json()
-        with open(filename, 'w') as file:
-            json.dump(data, file)
-        print('file loaded')
-        logger.info(f'File {filename} was successfully saved') # Adding info line to update log based on status of the response.
-        break
+        if len(data) > 0:          # Checking if the data delivered is NOT empty
+            try:                   # Using a try / except incase there are errors writing to the file
+                with open(filename, 'w') as file:      # the 'w' means 'write' - alternative is 'r' - 'read'
+                    json.dump(data, file)
+                print('file loaded')
+                logger.info(f'File {filename} was successfully saved') # Adding info line to update log based on status of the response.
+            except Exception as e:
+                logger.error(f'An error occurred: {e}')
+            break
+        else:
+            logger.error('No data returned')
+            break
     elif status <= 100 or status >=500:
         time.sleep(delay)
         print('retrying')
