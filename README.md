@@ -1,72 +1,106 @@
 # Bikepoint-ELT
 
-This is a project using the Bikepoint API (https://api-portal.tfl.gov.uk/api-details#api=BikePoint&operation=BikePoint_GetAll) to practice the ELT process.
+This project uses the TfL Bikepoint API to practise building a simple ELT pipeline in Python. The aim is to collect live bike point data, store it safely, and prepare it for later analysis and reporting.
 
-The aim of this project is to code a modular ELT process in python which can be used to monitor and investigate which bike points experience higher / lower demand at different times of day. This can be used to help TFL in their planning for where to build effective new bike points, as well as help them in the day to day management if they need to send vans to move bikes from full bikepoints to empty ones.
+The pipeline is designed to help investigate patterns in bike availability across different locations and times of day. This could support TfL in planning where new bike points might be most useful or where bikes may need to be redistributed.
 
 ---
 
-## Extract Stage
+## What this project does
 
-The first stage of this ELT process is the extraction stage. Its purpose is to collect raw bike point data from the TfL Bikepoint API and store it safely for later processing.
+The project follows a basic ELT flow:
 
-### What happens in this stage?
+1. Extract data from the Bikepoint API
+2. Save the raw JSON response to a timestamped local file
+3. Create logs for traceability
+4. Upload the extracted files to an S3 bucket
+5. Remove the local copies once they have been uploaded
 
-#### 1. Creating a timestamped output
+The code is split into small, reusable modules so the process is easier to understand and maintain.
 
-A timestamp is created for each run so that output files are uniquely named.
+### Main workflow
 
-```python
-timestamp = datetime.now().strftime('%Y-%m-%d %H-%M-%S')
-filename = f'{data_dir}/{timestamp}.json'
-```
-
-#### 2. Setting up logging
-
-A log file is set up to record the process and any errors.
+The main script is the entry point for the pipeline.
 
 ```python
-logging.basicConfig(
-    filename=log_filename,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
+from modules.logger import initiate_log
+from modules.load import load
+from modules.extract import extract_api
+
+logger = initiate_log(timestamp, log_dir)
+extract_api(url, data_dir, timestamp, max_retry=3, delay=10)
+load(AWS_ACCESS_KEY, AWS_SECRET_ACCESS_KEY, AWS_BUCKET_NAME)
 ```
 
-#### 3. Creating folders for storage
+This keeps the orchestration simple while the actual work is handled by separate functions.
 
-A folder is created to store the extracted JSON data and log files.
+---
 
-```python
-log_dir = 'logs'
-data_dir = 'data'
-os.makedirs(log_dir, exist_ok=True)
-os.makedirs(data_dir, exist_ok=True)
+## Repository folder map
+
+```text
+Bikepoint-ELT/
+├── main.py
+├── load_test.py
+├── requirements.txt
+├── README.md
+├── data/                 # generated JSON files from extraction
+├── logs/                 # generated log files
+└── modules/
+    ├── extract.py        # API extraction logic
+    ├── load.py           # uploads data to S3
+    └── logger.py         # logging setup
 ```
 
-#### 4. Sending the API request
+---
 
-The script sends a request to the Bikepoint API.
+## Script flow
 
-```python
-response = requests.get(url)
-status = response.status_code
+```text
++-------------------+
+| main.py           |
+| orchestrates flow |
++--------+----------+
+         |
+         v
++-------------------+
+| modules/logger.py |
+| start logging     |
++--------+----------+
+         |
+         v
++-------------------+
+| modules/extract.py|
+| call Bikepoint API|
+| save JSON file    |
++--------+----------+
+         |
+         v
++-------------------+
+| data/             |
+| timestamped files |
++--------+----------+
+         |
+         v
++-------------------+
+| modules/load.py   |
+| upload to S3      |
+| remove local file |
++--------+----------+
+         |
+         v
++-------------------+
+| AWS S3 bucket     |
++-------------------+
 ```
 
-#### 5. Saving successful responses
+---
 
-If the request is successful, the response data is saved as a JSON file.
+## Extract stage
 
-```python
-if 200 <= status < 300:
-    data = response.json()
-    with open(filename, 'w') as file:
-        json.dump(data, file)
-```
+The extract stage is responsible for calling the TfL Bikepoint API and saving the response locally.
 
-#### 6. Handling failures and retries
-
-If the request fails or returns no data, the script logs the issue and retries a limited number of times.
+A key part of this stage is the retry logic, which helps handle temporary failures gracefully.
 
 ```python
 while attempt < max_retry:
@@ -76,12 +110,67 @@ while attempt < max_retry:
     if 200 <= status < 300:
         data = response.json()
         if len(data) > 0:
+            with open(filename, 'w') as file:
+                json.dump(data, file)
             break
-    elif status <= 100 or status >= 500:
-        time.sleep(delay)
-        attempt += 1
 ```
 
-### Why this stage is important
+This stage also creates a timestamped filename so each run is stored separately.
 
-This stage ensures that the raw data is captured consistently and can be used later for analysis. It also makes it easier to troubleshoot problems by logging each stage of the ingestion, helping to pinpoint if anything has gone wrong in the process.
+```python
+timestamp = datetime.now().strftime('%Y-%m-%d %H-%M-%S')
+filename = f'{data_dir}/{timestamp}.json'
+```
+
+---
+
+## Load stage
+
+Once a file has been extracted, the load stage uploads it to an AWS S3 bucket.
+
+The current implementation:
+
+- reads AWS credentials from a .env file
+- creates an S3 client
+- uploads each file in the data folder
+- removes the local file after a successful upload
+
+---
+
+## Logging
+
+Each run produces a log file in the logs folder. Logging is set up centrally in the logger module so that the whole pipeline can be tracked more clearly.
+
+```python
+logging.basicConfig(
+    filename=log_filename,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
+```
+
+---
+
+## How to run
+
+1. Install the required packages:
+
+```bash
+pip install -r requirements.txt
+```
+
+2. Create a .env file with your AWS credentials:
+
+```text
+AWS_ACCESS_KEY=your_access_key
+AWS_SECRET_ACCESS_KEY=your_secret_key
+AWS_BUCKET_NAME=your_bucket_name
+```
+
+3. Run the main script:
+
+```bash
+python main.py
+```
+
+This will start the full process from extraction through to S3 upload.
