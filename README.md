@@ -135,6 +135,23 @@ The current implementation:
 - uploads each file in the data folder
 - removes the local file after a successful upload
 
+Here is the core upload logic:
+
+```python
+s3_client = boto3.client(
+    's3',
+    aws_access_key_id=AWS_ACCESS_KEY,
+    aws_secret_access_key=AWS_SECRET_ACCESS_KEY
+)
+
+for file in files:
+    to_upload = f'{data_dir}/{file}'
+    s3_client.upload_file(to_upload, AWS_BUCKET_NAME, file)
+    os.remove(to_upload)
+```
+
+This shows how the extracted JSON files are transferred into S3 and then cleaned up locally.
+
 ---
 
 ## Logging
@@ -148,6 +165,16 @@ logging.basicConfig(
     level=logging.INFO
 )
 ```
+
+A simple example of the logger being created and used looks like this:
+
+```python
+logger = initiate_log(timestamp, log_dir)
+logger.info('Logger successfully initiated')
+logger.info('Load Stage initiated')
+```
+
+This makes it easier to follow the pipeline and diagnose issues when a run fails.
 
 ---
 
