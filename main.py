@@ -1,6 +1,6 @@
-from logger import initiate_log
-from load import load
-from extract import extract_api
+from modules.logger import initiate_log
+from modules.load import load
+from modules.extract import extract_api
 from datetime import datetime
 from dotenv import load_dotenv
 import os
