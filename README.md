@@ -113,7 +113,14 @@ while attempt < max_retry:
             with open(filename, 'w') as file:
                 json.dump(data, file)
             break
+    elif status <= 100 or status >= 500:
+        time.sleep(delay)
+        logger.info('retrying')
+        logger.info(f'Status code {status}. Retrying. This was attempt {attempt}')
+        attempt += 1
 ```
+
+This shows that the script retries after a server-side or low-status response instead of giving up immediately.
 
 This stage also creates a timestamped filename so each run is stored separately.
 
