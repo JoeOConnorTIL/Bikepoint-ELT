@@ -1,44 +1,19 @@
 import requests, os, json, logging, time
 from datetime import datetime
 
-
-##################################### LOGGING #########################################
-
-#timestamp = datetime.now().strftime('%Y-%m-%d %H-%M-%S') # based on the date time now i.e. when it is extracted
-#log_dir = 'logs'
-#os.makedirs(log_dir, exist_ok=True) # creates a folder called 'logs' - if it already exists then it's ok - i.e. doesnt show an error or do anything.
-#log_filename = f'{log_dir}/extract_{timestamp}.log' # creating a string for the filename based on the timestamp
-
-# Configutring logging - anything INFO level and higher will be included
-#logging.basicConfig(
-#    filename = log_filename,
-#    format = '%(asctime)s - %(levelname)s - %(message)s', 
-#    level = logging.INFO
-#)
-
 timestamp = datetime.now().strftime('%Y-%m-%d %H-%M-%S') # based on the date time now i.e. when it is extracted
 logger = logging.getLogger()
 url = 'https://api.tfl.gov.uk/BikePoint/'
 data_dir = 'data'
 
-#################################### API SETUP ########################################
-
 def extract_api(url, data_dir, timestamp, max_retry=3, delay=10):
 
-    #timestamp = datetime.now().strftime('%Y-%m-%d %H-%M-%S') # based on the date time now i.e. when it is extracted
-
-    #logger = logging.getLogger()
     logger.info(f'Extract Stage initiated')
 
-    # Setting up variables for API call
-
-    url = 'https://api.tfl.gov.uk/BikePoint/'
-    data_dir = 'data'
-    os.makedirs(data_dir, exist_ok=True) # creates a folder called 'data' - if it already exists then it's ok - i.e. doesnt show an error or do anything.
+    # Making data directory if it doesn't already exist.
+    os.makedirs(data_dir, exist_ok=True)
     filename = f'{data_dir}/{timestamp}.json' # creating a filename based on timestamp
-    # max_retry = 5
     attempt = 0
-    # delay = 10
 
     # Loop to call API and handle errors:
 
