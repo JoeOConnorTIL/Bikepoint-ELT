@@ -22,42 +22,44 @@ logger.info('Logger successfully initiated')
 
 #################################### API SETUP ########################################
 
+def extract_api():
+
 # Setting up variables for API call
 
-url = 'https://api.tfl.gov.uk/BikePoint/'
-data_dir = 'data'
-os.makedirs(data_dir, exist_ok=True) # creates a folder called 'data' - if it already exists then it's ok - i.e. doesnt show an error or do anything.
-filename = f'{data_dir}/{timestamp}.json' # creating a filename based on timestamp
-max_retry = 5
-attempt = 0
-delay = 10
+    url = 'https://api.tfl.gov.uk/BikePoint/'
+    data_dir = 'data'
+    os.makedirs(data_dir, exist_ok=True) # creates a folder called 'data' - if it already exists then it's ok - i.e. doesnt show an error or do anything.
+    filename = f'{data_dir}/{timestamp}.json' # creating a filename based on timestamp
+    max_retry = 5
+    attempt = 0
+    delay = 10
 
-# Loop to call API and handle errors:
+    # Loop to call API and handle errors:
 
-while attempt < max_retry:
-    response = requests.get(url)
-    status = response.status_code
-    if 200 <= status < 300:
-        data = response.json()
-        if len(data) > 0:          # Checking if the data delivered is NOT empty
-            try:                   # Using a try / except incase there are errors writing to the file
-                with open(filename, 'w') as file:      # the 'w' means 'write' - alternative is 'r' - 'read'
-                    json.dump(data, file)
-                print('file loaded')
-                logger.info(f'File {filename} was successfully saved') # Adding info line to update log based on status of the response.
-            except Exception as e:
-                logger.error(f'An error occurred: {e}')
-            break
+    while attempt < max_retry:
+        response = requests.get(url)
+        status = response.status_code
+        if 200 <= status < 300:
+            data = response.json()
+            if len(data) > 0:          # Checking if the data delivered is NOT empty
+                try:                   # Using a try / except incase there are errors writing to the file
+                    with open(filename, 'w') as file:      # the 'w' means 'write' - alternative is 'r' - 'read'
+                        json.dump(data, file)
+                    print('file loaded')
+                    logger.info(f'File {filename} was successfully saved') # Adding info line to update log based on status of the response.
+                except Exception as e:
+                    logger.error(f'An error occurred: {e}')
+                break
+            else:
+                logger.error('No data returned')
+                break
+        elif status <= 100 or status >=500:
+            time.sleep(delay)
+            print('retrying')
+            logger.info(f'Status code {status}. Retrying. This was attempt {attempt}') # Adding info line to update log based on status of the response.
+            attempt += 1
         else:
-            logger.error('No data returned')
+            print('fix something')
+            print(status)
+            logger.error(f'Error. Status code {status}. Fix it') # Adding info line to update log based on status of the response.
             break
-    elif status <= 100 or status >=500:
-        time.sleep(delay)
-        print('retrying')
-        logger.info(f'Status code {status}. Retrying. This was attempt {attempt}') # Adding info line to update log based on status of the response.
-        attempt += 1
-    else:
-        print('fix something')
-        print(status)
-        logger.error(f'Error. Status code {status}. Fix it') # Adding info line to update log based on status of the response.
-        break
