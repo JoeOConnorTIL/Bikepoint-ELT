@@ -16,17 +16,16 @@ from datetime import datetime
 #    level = logging.INFO
 #)
 
-# Assign the logger
-#logger = logging.getLogger()
-#logger.info('Logger successfully initiated')
+timestamp = datetime.now().strftime('%Y-%m-%d %H-%M-%S') # based on the date time now i.e. when it is extracted
+logger = logging.getLogger()
 
 #################################### API SETUP ########################################
 
 def extract_api():
 
-    timestamp = datetime.now().strftime('%Y-%m-%d %H-%M-%S') # based on the date time now i.e. when it is extracted
+    #timestamp = datetime.now().strftime('%Y-%m-%d %H-%M-%S') # based on the date time now i.e. when it is extracted
 
-    logger = logging.getLogger()
+    #logger = logging.getLogger()
     logger.info(f'Extract Stage initiated')
 
     # Setting up variables for API call
