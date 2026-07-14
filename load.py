@@ -19,7 +19,12 @@ import boto3
 #logger = logging.getLogger()
 #logger.info('Logger successfully initiated')
 
-def load():
+load_dotenv()
+AWS_ACCESS_KEY = os.getenv('AWS_ACCESS_KEY')
+AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
+AWS_BUCKET_NAME = os.getenv('AWS_BUCKET_NAME')
+
+def load(AWS_ACCESS_KEY, AWS_SECRET_ACCESS_KEY, AWS_BUCKET_NAME):
     logger = logging.getLogger()
     logger.info('Load Stage initiated')
     # Loading access/secret keys from .env file
